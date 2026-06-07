@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Chivo } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import { site } from "@/app/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,28 +13,38 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const chivo = Chivo({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
+const title = `${site.org} — Open Source`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://open.estopia.net"),
-  title: {
-    default: "Estopia Engineering Open Source",
-    template: "%s | Estopia Engineering",
-  },
-  description:
-    "Open source software built and maintained by Estopia Engineering Ltd.",
+  title,
+  description: site.description,
+  applicationName: "Estopia Open Source",
+  keywords: [
+    "Estopia",
+    "Estopia Engineering",
+    "open source",
+    "terminal",
+    "command line",
+    "projects",
+  ],
+  authors: [{ name: site.orgLegal, url: site.mainSite }],
+  creator: site.orgLegal,
   openGraph: {
-    title: "Estopia Engineering Open Source",
-    description:
-      "Discover and contribute to the open source software from Estopia Engineering Ltd.",
-    url: "https://open.estopia.net",
-    siteName: "open.estopia.net",
+    title,
+    description: site.description,
+    siteName: title,
+    url: site.mainSite,
     type: "website",
   },
+  twitter: {
+    card: "summary",
+    title,
+    description: site.description,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#070b09",
 };
 
 export default function RootLayout({
@@ -44,9 +55,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${chivo.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }
