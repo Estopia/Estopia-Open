@@ -3,10 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: estopia-open:latest
     container_name: estopia-open
-    ports:
-      - "3000:3000"
+    networks:
+      - proxy
     environment:
       NODE_ENV: production
       PORT: "3000"
@@ -23,3 +22,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+
+networks:
+  proxy:
+    external: true
