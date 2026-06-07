@@ -1,0 +1,2 @@
+# Keeps the public/ directory in the repo so the Docker build can copy it.
+# Add static assets (images, robots.txt, etc.) here and they are served at /.

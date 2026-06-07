@@ -1,0 +1,29 @@
+# Dependencies and build output (re-created inside the image)
+node_modules
+.next
+out
+build
+
+# Version control / tooling
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Local env files and logs
+.env*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker / docs (not needed in the build context)
+Dockerfile
+.dockerignore
+docker-compose.yml
+README.md
+
+# OS cruft
+.DS_Store
+Thumbs.db

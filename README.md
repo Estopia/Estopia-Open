@@ -85,11 +85,35 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Scripts
 
 ```bash
-pnpm dev     # start the dev server
-pnpm build   # production build
-pnpm start   # serve the production build
-pnpm lint    # run ESLint
+pnpm dev      # start the dev server
+pnpm build    # production build
+pnpm start    # serve the production build
+pnpm lint     # run ESLint
+pnpm format   # format with Prettier
 ```
+
+## Docker
+
+The app ships with a multi-stage `Dockerfile` (built on Next.js' standalone
+output) and a `docker-compose.yml`.
+
+With Compose:
+
+```bash
+docker compose up --build    # build + run on http://localhost:3000
+docker compose down          # stop and remove
+```
+
+Or with plain Docker:
+
+```bash
+docker build -t estopia-open .
+docker run --rm -p 3000:3000 estopia-open
+```
+
+The runtime image is ~200 MB, runs as a non-root `nextjs` user, and the server
+honours the `PORT` and `HOSTNAME` environment variables (defaults `3000` and
+`0.0.0.0`).
 
 ## Configuration
 

@@ -4,3 +4,7 @@ pnpm-lock.yaml
 package-lock.json
 *.svg
 public
+
+# Product/design docs are maintained by hand — don't reformat them.
+DESIGN.md
+PRODUCT.md

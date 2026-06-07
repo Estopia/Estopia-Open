@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Produce a self-contained build for small Docker images (.next/standalone).
+  output: "standalone",
   allowedDevOrigins: [
     "192.168.0.100",
     "192.168.0.*",
