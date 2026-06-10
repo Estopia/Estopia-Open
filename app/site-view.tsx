@@ -1,7 +1,7 @@
 "use client";
 
 import { site } from "@/app/lib/site";
-import type { Project } from "@/app/lib/projects";
+import { demoUrl, type Project } from "@/app/lib/projects";
 
 export default function SiteView({
   projects,
@@ -56,30 +56,53 @@ export default function SiteView({
           Projects <span className="site-count">{projects.length}</span>
         </h2>
         <div className="site-grid">
-          {projects.map((p) => (
-            <a
-              key={p.name}
-              className="site-card"
-              href={p.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <span className="site-card-name">{p.name}</span>
-              <span className="site-card-desc">{p.description}</span>
-              <span className="site-card-meta">
-                {p.language ? (
-                  <span className="site-tag">{p.language}</span>
-                ) : null}
-                {p.license ? (
-                  <span className="site-tag site-tag-dim">{p.license}</span>
-                ) : null}
-                {p.stars > 0 ? (
-                  <span className="site-tag site-tag-dim">★ {p.stars}</span>
-                ) : null}
-                <span className="site-card-go">View on GitHub →</span>
-              </span>
-            </a>
-          ))}
+          {projects.map((p) => {
+            const demo = demoUrl(p);
+            return (
+              <article key={p.name} className="site-card">
+                <a
+                  className="site-card-name"
+                  href={p.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {p.name}
+                </a>
+                <span className="site-card-desc">{p.description}</span>
+                <span className="site-card-meta">
+                  {p.language ? (
+                    <span className="site-tag">{p.language}</span>
+                  ) : null}
+                  {p.license ? (
+                    <span className="site-tag site-tag-dim">{p.license}</span>
+                  ) : null}
+                  {p.stars > 0 ? (
+                    <span className="site-tag site-tag-dim">★ {p.stars}</span>
+                  ) : null}
+                </span>
+                <span className="site-card-actions">
+                  {demo ? (
+                    <a
+                      className="site-card-btn site-card-btn-demo"
+                      href={demo}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Demo <span aria-hidden="true">↗</span>
+                    </a>
+                  ) : null}
+                  <a
+                    className="site-card-btn"
+                    href={p.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Code <span aria-hidden="true">↗</span>
+                  </a>
+                </span>
+              </article>
+            );
+          })}
         </div>
       </section>
 

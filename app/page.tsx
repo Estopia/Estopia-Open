@@ -1,4 +1,4 @@
-import { getProjects } from "@/app/lib/projects";
+import { getProjects, demoUrl } from "@/app/lib/projects";
 import { site } from "@/app/lib/site";
 import AppShell from "@/app/app-shell";
 
@@ -13,11 +13,20 @@ export default async function Home() {
         <h1>{site.org} — Open Source Projects</h1>
         <p>{site.description}</p>
         <ul>
-          {projects.map((p) => (
-            <li key={p.name}>
-              <a href={p.url}>{p.name}</a> — {p.description}
-            </li>
-          ))}
+          {projects.map((p) => {
+            const demo = demoUrl(p);
+            return (
+              <li key={p.name}>
+                <a href={p.url}>{p.name}</a> — {p.description}
+                {demo ? (
+                  <>
+                    {" "}
+                    (<a href={demo}>live demo</a>)
+                  </>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
         <p>
           <a href={site.donate}>Donate / Sponsor</a> ·{" "}

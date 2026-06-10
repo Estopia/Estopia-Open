@@ -276,6 +276,22 @@ body {
   border-bottom-color: currentColor;
 }
 
+.t-demo-link {
+  font: inherit;
+  color: var(--green);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px dotted transparent;
+}
+
+.t-demo-link:hover {
+  color: #66f29a;
+  border-bottom-color: currentColor;
+}
+
 /* input row --------------------------------------------------------------- */
 
 .t-inputrow {
@@ -756,6 +772,11 @@ body {
   color: #eafff7;
   font-weight: 600;
   font-size: 1.02rem;
+  text-decoration: none;
+}
+
+a.site-card-name:hover {
+  color: var(--teal);
 }
 
 .site-card-desc {
@@ -786,10 +807,42 @@ body {
   color: var(--meta);
 }
 
-.site-card-go {
-  margin-left: auto;
-  color: var(--sky);
+.site-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.site-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--term-border);
+  border-radius: 7px;
   font-size: 0.78rem;
+  color: var(--term-fg);
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.site-card-btn:hover {
+  border-color: var(--teal);
+  background: rgba(94, 234, 212, 0.08);
+}
+
+.site-card-btn-demo {
+  border-color: var(--green);
+  color: var(--green);
+  font-weight: 600;
+}
+
+.site-card-btn-demo:hover {
+  border-color: var(--green);
+  background: rgba(74, 222, 128, 0.12);
 }
 
 .site-footer {

@@ -5,6 +5,7 @@ export const site = {
   description:
     "The open-source projects built and maintained by Estopia Engineering — explored through an interactive command line.",
   mainSite: "https://estopia.net",
+  openSite: "https://open.estopia.net",
   github: "https://github.com/Estopia",
   githubOrg: "Estopia",
   donate: "https://github.com/sponsors/Estopia",

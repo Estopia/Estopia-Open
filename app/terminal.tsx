@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { site, prompt } from "@/app/lib/site";
-import type { Project } from "@/app/lib/projects";
+import { demoUrl, demoLabel, type Project } from "@/app/lib/projects";
 
 const BANNER = `███████╗███████╗████████╗ ██████╗ ██████╗ ██╗ █████╗ 
 ██╔════╝██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██║██╔══██╗
@@ -37,6 +37,7 @@ const SITE_COMMANDS: Command[] = [
   { name: "about", desc: "What is Estopia Engineering?" },
   { name: "projects", desc: "List our open-source projects" },
   { name: "open", args: "<n|name>", desc: "Open a project on GitHub" },
+  { name: "demo", args: "<n|name>", desc: "Open a project's live demo" },
   { name: "donate", desc: "Support our work via GitHub Sponsors" },
   { name: "site", desc: "Visit our main website" },
   { name: "github", desc: "Open our GitHub organisation" },
@@ -320,6 +321,7 @@ export default function Terminal({
 
   function projectRow(p: Project, i: number): ReactNode {
     const idx = String(i + 1).padStart(2, " ");
+    const demo = demoUrl(p);
     return (
       <span key={`pr-${p.name}`}>
         <span className="t-dim">{idx}. </span>
@@ -329,6 +331,14 @@ export default function Terminal({
         {p.language ? <span className="t-meta"> · {p.language}</span> : null}
         {p.license ? <span className="t-meta"> · {p.license}</span> : null}
         {p.stars > 0 ? <span className="t-meta"> · ★ {p.stars}</span> : null}
+        {demo ? (
+          <>
+            <span className="t-meta"> · </span>
+            <button className="t-demo-link" onClick={() => openLink(demo)}>
+              demo ↗
+            </button>
+          </>
+        ) : null}
       </span>
     );
   }
@@ -353,15 +363,17 @@ export default function Terminal({
     out.push(BLANK);
     out.push(
       <span key="pt" className="t-dim">
-        Run <span className="t-cmd">{"open <number|name>"}</span> to visit a
-        repo on GitHub.
+        Run <span className="t-cmd">{"open <number|name>"}</span> for the code
+        or <span className="t-cmd">{"demo <number|name>"}</span> for the live
+        site.
       </span>,
     );
     return out;
   }
 
   function projectDetail(p: Project): ReactNode[] {
-    return [
+    const demo = demoUrl(p);
+    const lines: ReactNode[] = [
       <span key="d1" className="t-accent">
         {p.name}
       </span>,
@@ -381,6 +393,17 @@ export default function Terminal({
         </button>
       </span>,
     ];
+    if (demo) {
+      lines.push(
+        <span key="d5">
+          <span className="t-dim">demo: </span>
+          <button className="t-demo-link" onClick={() => openLink(demo)}>
+            {demoLabel(demo)}
+          </button>
+        </span>,
+      );
+    }
+    return lines;
   }
 
   function contactLines(): ReactNode[] {
@@ -730,6 +753,11 @@ export default function Terminal({
       case "open":
         pushLines(openProject(arg));
         break;
+      case "demo":
+      case "live":
+      case "preview":
+        pushLines(demoProject(arg));
+        break;
       case "donate":
       case "sponsor":
       case "support":
@@ -879,6 +907,15 @@ export default function Terminal({
     }
   }
 
+  function findProject(query: string): Project | undefined {
+    if (/^\d+$/.test(query)) return projects[Number(query) - 1];
+    const q = query.toLowerCase();
+    return (
+      projects.find((p) => p.name.toLowerCase() === q) ??
+      projects.find((p) => p.name.toLowerCase().includes(q))
+    );
+  }
+
   function openProject(arg: string): ReactNode[] {
     const query = arg.trim();
     if (!query) {
@@ -889,15 +926,7 @@ export default function Terminal({
         </span>,
       ];
     }
-    let target: Project | undefined;
-    if (/^\d+$/.test(query)) {
-      target = projects[Number(query) - 1];
-    } else {
-      const q = query.toLowerCase();
-      target =
-        projects.find((p) => p.name.toLowerCase() === q) ??
-        projects.find((p) => p.name.toLowerCase().includes(q));
-    }
+    const target = findProject(query);
     if (!target) {
       return [
         <span key="on" className="t-err">
@@ -910,6 +939,42 @@ export default function Terminal({
       <span key="oo">
         opening <span className="t-accent">{target.name}</span>{" "}
         <span className="t-dim">→ {target.url}</span>
+      </span>,
+    ];
+  }
+
+  function demoProject(arg: string): ReactNode[] {
+    const query = arg.trim();
+    if (!query) {
+      return [
+        <span key="du" className="t-err">
+          usage: demo {"<number|name>"} — run{" "}
+          <span className="t-cmd">projects</span> to see the list.
+        </span>,
+      ];
+    }
+    const target = findProject(query);
+    if (!target) {
+      return [
+        <span key="dn" className="t-err">
+          no such project: {query}
+        </span>,
+      ];
+    }
+    const url = demoUrl(target);
+    if (!url) {
+      return [
+        <span key="dnd" className="t-dim">
+          <span className="t-accent">{target.name}</span> has no live demo. Try{" "}
+          <span className="t-cmd">open {target.name}</span> for the code.
+        </span>,
+      ];
+    }
+    openLink(url);
+    return [
+      <span key="do">
+        opening the <span className="t-accent">{target.name}</span> demo{" "}
+        <span className="t-dim">→ {demoLabel(url)}</span>
       </span>,
     ];
   }
@@ -938,6 +1003,7 @@ export default function Terminal({
   function completionPool(head: string): string[] {
     switch (head) {
       case "open":
+      case "demo":
         return projects.map((p) => p.name);
       case "cat":
       case "less":

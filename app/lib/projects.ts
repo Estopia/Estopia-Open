@@ -25,6 +25,50 @@ type GitHubRepo = {
 // Repos that should never be listed (org meta, forks handled separately).
 const HIDDEN_REPOS = new Set([".github"]);
 
+// Hosts that belong to this showcase itself. A repo whose GitHub homepage points
+// here is just linking back to this site, so it should not get a "demo" button.
+const SELF_HOSTS: ReadonlySet<string> = (() => {
+  try {
+    const host = new URL(site.openSite).hostname.toLowerCase();
+    const bare = host.replace(/^www\./, "");
+    return new Set([host, bare, `www.${bare}`]);
+  } catch {
+    return new Set(["open.estopia.net", "www.open.estopia.net"]);
+  }
+})();
+
+/**
+ * The live demo URL for a project, taken from its GitHub repo homepage. Returns
+ * null when there is no homepage, it isn't a valid http(s) URL, or it points
+ * back at this showcase ({@link site.openSite}).
+ */
+export function demoUrl(project: Pick<Project, "homepage">): string | null {
+  const raw = project.homepage?.trim();
+  if (!raw) return null;
+
+  const candidate = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  let parsed: URL;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+  if (SELF_HOSTS.has(parsed.hostname.toLowerCase())) return null;
+  return parsed.toString();
+}
+
+/** A compact, human-readable label for a demo URL (host + path, no scheme). */
+export function demoLabel(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname === "/" ? "" : u.pathname.replace(/\/$/, "");
+    return `${u.host}${path}`;
+  } catch {
+    return url.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  }
+}
+
 // Hand-written descriptions for repos whose GitHub description is empty,
 // so the listing always reads well.
 const DESCRIPTION_OVERRIDES: Record<string, string> = {
