@@ -27,7 +27,7 @@ const modeListeners = new Set<() => void>();
 
 function readMode(): Mode {
   try {
-    return localStorage.getItem(VIEW_KEY) === "site" ? "site" : "terminal";
+    return localStorage.getItem(VIEW_KEY) === "terminal" ? "terminal" : "site";
   } catch {
     return "terminal";
   }
@@ -62,7 +62,7 @@ export default function AppShell({
   const mode = useSyncExternalStore(
     subscribeMode,
     readMode,
-    () => "terminal" as Mode,
+    () => "site" as Mode,
   );
 
   const [projects, setProjects] = useState<Project[]>(initialProjects);
@@ -255,6 +255,8 @@ export default function AppShell({
   const windowClass = [
     "window",
     "os-mac",
+    mode === "site" ? "site-mode" : "",
+    mode === "terminal" ? "terminal-mode" : "",
     maximized ? "maximized" : "",
     minimized ? "minimized" : "",
     dragging ? "dragging" : "",
@@ -290,11 +292,11 @@ export default function AppShell({
             type="button"
             className="btn btn-toggle"
             onClick={toggleMode}
-            title="Switch between the terminal and the normal site"
+            title="Switch between the project directory and terminal"
           >
             {mode === "terminal" ? (
               <>
-                <span aria-hidden="true">▦</span> Simple view
+                <span aria-hidden="true">▦</span> Directory
               </>
             ) : (
               <>
@@ -332,10 +334,7 @@ export default function AppShell({
       {mode === "terminal" ? (
         <Terminal projects={projects} onExit={() => setMode("site")} />
       ) : (
-        <SiteView
-          projects={projects}
-          onOpenTerminal={() => setMode("terminal")}
-        />
+        <SiteView projects={projects} />
       )}
 
       <footer className="statusbar">

@@ -42,7 +42,7 @@ const SITE_COMMANDS: Command[] = [
   { name: "site", desc: "Visit our main website" },
   { name: "github", desc: "Open our GitHub organisation" },
   { name: "contact", desc: "How to get in touch" },
-  { name: "gui", desc: "Switch to the normal website view" },
+  { name: "gui", desc: "Switch to the project directory" },
   { name: "banner", desc: "Reprint the Estopia banner" },
 ];
 
@@ -171,9 +171,9 @@ export default function Terminal({
         <span className="t-cmd">→</span>) to autocomplete.
       </span>,
       <span key="hint" className="t-dim">
-        Prefer a normal website? Click{" "}
-        <span className="t-accent">▦ Simple view</span> in the title bar (or
-        type <span className="t-cmd">gui</span>).
+        Prefer the project directory? Choose{" "}
+        <span className="t-accent">▦ Directory</span> in the title bar (or type{" "}
+        <span className="t-cmd">gui</span>).
       </span>,
       BLANK,
     ];
@@ -667,12 +667,12 @@ export default function Terminal({
           </span>
           <span className="t-neo-colors" aria-hidden="true">
             {[
-              "#4ade80",
-              "#5eead4",
-              "#56b6ff",
-              "#7aa2ff",
-              "#fbbf24",
-              "#f87171",
+              "var(--directory-primary)",
+              "var(--directory-accent)",
+              "var(--directory-foreground)",
+              "var(--directory-muted)",
+              "var(--warn)",
+              "var(--err)",
             ].map((c) => (
               <span key={c} className="t-neo-sq" style={{ background: c }} />
             ))}
