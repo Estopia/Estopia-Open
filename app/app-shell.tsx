@@ -17,7 +17,8 @@ const POLL_MS = 60_000;
 function projectsSignature(list: Project[]): string {
   return list
     .map(
-      (p) => `${p.name}|${p.description}|${p.stars}|${p.language}|${p.license}`,
+      (p) =>
+        `${p.name}|${p.description}|${p.stars}|${p.language}|${p.license}|${p.pushedAt}|${p.homepage}`,
     )
     .join("\n");
 }
@@ -56,8 +57,11 @@ function subscribeMode(cb: () => void) {
 
 export default function AppShell({
   projects: initialProjects,
+  initialLive = false,
 }: {
   projects: Project[];
+  /** Whether the server read the list from GitHub (not the saved fallback). */
+  initialLive?: boolean;
 }) {
   const mode = useSyncExternalStore(
     subscribeMode,
@@ -66,7 +70,7 @@ export default function AppShell({
   );
 
   const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [live, setLive] = useState(false);
+  const [live, setLive] = useState(initialLive);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [maximized, setMaximized] = useState(true);
   const [minimized, setMinimized] = useState(false);
@@ -155,9 +159,22 @@ export default function AppShell({
     if (minimized) setMinimized(false);
   }
 
-  function toggleMode() {
+  function openTerminal() {
     setMinimized(false);
-    setMode((m) => (m === "terminal" ? "site" : "terminal"));
+    setMaximized(true);
+    setPos({ x: 0, y: 0 });
+    setMode("terminal");
+    window.scrollTo(0, 0);
+  }
+
+  // Leaving the shell lands on the project list.
+  function backToPage(toProjects = false) {
+    setMode("site");
+    if (toProjects) {
+      window.setTimeout(() => {
+        document.getElementById("projects")?.scrollIntoView({ block: "start" });
+      }, 60);
+    }
   }
 
   // ---- dragging -----------------------------------------------------------
@@ -247,16 +264,16 @@ export default function AppShell({
     );
   }
 
-  const titleName =
-    mode === "terminal"
-      ? `${prompt.user}@${prompt.host}: ${prompt.path}`
-      : `${site.org} — Open Source`;
+  if (mode === "site") {
+    return (
+      <SiteView projects={projects} live={live} onOpenTerminal={openTerminal} />
+    );
+  }
+
+  const titleName = `${prompt.user}@${prompt.host}: ${prompt.path}`;
 
   const windowClass = [
     "window",
-    "os-mac",
-    mode === "site" ? "site-mode" : "",
-    mode === "terminal" ? "terminal-mode" : "",
     maximized ? "maximized" : "",
     minimized ? "minimized" : "",
     dragging ? "dragging" : "",
@@ -265,103 +282,68 @@ export default function AppShell({
     .join(" ");
 
   return (
-    <div
-      ref={windowRef}
-      className={windowClass}
-      style={
-        maximized
-          ? undefined
-          : { transform: `translate(${pos.x}px, ${pos.y}px)` }
-      }
-    >
-      <header
-        className="titlebar"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onDoubleClick={toggleMaximize}
+    <main className="term-page">
+      <h1 className="sr-only">{site.org} open source, terminal</h1>
+      <div
+        ref={windowRef}
+        className={windowClass}
+        style={
+          maximized
+            ? undefined
+            : { transform: `translate(${pos.x}px, ${pos.y}px)` }
+        }
       >
-        {renderControls()}
+        <header
+          className="titlebar"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onDoubleClick={toggleMaximize}
+        >
+          {renderControls()}
 
-        <span className="titlebar-name" title={titleName}>
-          {titleName}
-        </span>
-
-        <nav className="toolbar no-drag" aria-label="Primary">
-          <button
-            type="button"
-            className="btn btn-toggle"
-            onClick={toggleMode}
-            title="Switch between the project directory and terminal"
-          >
-            {mode === "terminal" ? (
-              <>
-                <span aria-hidden="true">▦</span> Directory
-              </>
-            ) : (
-              <>
-                <span aria-hidden="true">❯_</span> Terminal
-              </>
-            )}
-          </button>
-          <a
-            className="btn btn-donate"
-            href={site.donate}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span aria-hidden="true">♥</span> Donate
-          </a>
-          <a
-            className="btn"
-            href={site.mainSite}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Main site <span aria-hidden="true">↗</span>
-          </a>
-          <a
-            className="btn btn-hide-sm"
-            href={site.github}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            GitHub <span aria-hidden="true">↗</span>
-          </a>
-        </nav>
-      </header>
-
-      {mode === "terminal" ? (
-        <Terminal projects={projects} onExit={() => setMode("site")} />
-      ) : (
-        <SiteView projects={projects} />
-      )}
-
-      <footer className="statusbar">
-        <span className="statusbar-org">
-          <span
-            className={live ? "live-dot live-dot-on" : "live-dot"}
-            aria-hidden="true"
-          />
-          {site.org}
-          <span className="sr-only">
-            {live ? " — live, updates automatically" : ""}
+          <span className="titlebar-name" title={titleName}>
+            {titleName}
           </span>
-        </span>
-        <span className="statusbar-hint">
-          {projects.length} repos ·{" "}
-          {mode === "terminal" ? (
-            <>
-              type <code>help</code>
-            </>
-          ) : (
-            "click a project to open it"
-          )}
-        </span>
-        <a href={`mailto:${site.email}`} className="statusbar-link">
-          {site.email}
-        </a>
-      </footer>
-    </div>
+
+          <nav className="toolbar no-drag" aria-label="Primary">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => backToPage()}
+            >
+              Back to page
+            </button>
+            <a className="btn" href={site.donate}>
+              Sponsor
+            </a>
+            <a className="btn btn-hide-sm" href={site.github}>
+              GitHub
+            </a>
+          </nav>
+        </header>
+
+        <Terminal projects={projects} onExit={() => backToPage(true)} />
+
+        <footer className="statusbar">
+          <span className="statusbar-org">
+            <span
+              className={live ? "live-dot is-live" : "live-dot"}
+              aria-hidden="true"
+            />
+            {site.org}
+            <span className="sr-only">
+              {live ? " — live, updates automatically" : ""}
+            </span>
+          </span>
+          <span className="statusbar-hint">
+            {projects.length} repos, type <code>help</code>
+          </span>
+          <a href={`mailto:${site.email}`} className="statusbar-link">
+            {site.email}
+          </a>
+        </footer>
+      </div>
+    </main>
   );
 }

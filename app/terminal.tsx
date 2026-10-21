@@ -42,7 +42,7 @@ const SITE_COMMANDS: Command[] = [
   { name: "site", desc: "Visit our main website" },
   { name: "github", desc: "Open our GitHub organisation" },
   { name: "contact", desc: "How to get in touch" },
-  { name: "gui", desc: "Switch to the project directory" },
+  { name: "gui", desc: "Go to the project list" },
   { name: "banner", desc: "Reprint the Estopia banner" },
 ];
 
@@ -62,7 +62,7 @@ const SYS_COMMANDS: Command[] = [
   { name: "date", desc: "Print the current date and time" },
   { name: "echo", args: "<text>", desc: "Print a line of text" },
   { name: "clear", desc: "Clear the screen" },
-  { name: "exit", desc: "Leave the shell (opens the desktop view)" },
+  { name: "exit", desc: "Leave the shell (back to the project list)" },
 ];
 
 const ALL_COMMANDS = [...SITE_COMMANDS, ...SYS_COMMANDS];
@@ -75,23 +75,29 @@ const ALL_NAMES = Array.from(
 
 function Prompt({ path }: { path: string }) {
   return (
-    <span className="t-prompt">
+    <samp className="t-prompt">
       <span className="t-user">
         {prompt.user}@{prompt.host}
       </span>
       <span className="t-sep">:</span>
       <span className="t-path">{path}</span>
       <span className="t-dollar">$ </span>
-    </span>
+    </samp>
   );
 }
 
 export default function Terminal({
   projects,
   onExit,
+  inline = false,
+  quickCommands = [],
 }: {
   projects: Project[];
   onExit: () => void;
+  /** Embedded in the page: no focus on load, a shorter welcome. */
+  inline?: boolean;
+  /** Commands offered as buttons under the prompt, for touch and mouse. */
+  quickCommands?: string[];
 }) {
   const [lines, setLines] = useState<{ id: number; node: ReactNode }[]>([]);
   const [input, setInput] = useState("");
@@ -170,13 +176,15 @@ export default function Terminal({
         Tip: start typing and press <span className="t-cmd">Tab</span> (or{" "}
         <span className="t-cmd">→</span>) to autocomplete.
       </span>,
-      <span key="hint" className="t-dim">
-        Prefer the project directory? Choose{" "}
-        <span className="t-accent">▦ Directory</span> in the title bar (or type{" "}
-        <span className="t-cmd">gui</span>).
-      </span>,
+      inline ? null : (
+        <span key="hint" className="t-dim">
+          Prefer a normal page? Choose{" "}
+          <span className="t-accent">Back to page</span> in the title bar (or
+          type <span className="t-cmd">gui</span>).
+        </span>
+      ),
       BLANK,
-    ];
+    ].filter((node) => node !== null);
 
     const timers: ReturnType<typeof setTimeout>[] = [];
     boot.forEach((node, i) => {
@@ -190,13 +198,15 @@ export default function Terminal({
       setTimeout(
         () => {
           setBooted(true);
-          inputRef.current?.focus();
+          if (!inline) inputRef.current?.focus();
         },
         boot.length * 110 + 60,
       ),
     );
 
     return () => timers.forEach(clearTimeout);
+    // The welcome runs once per mount; `inline` never changes for a mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Keep the latest output in view.
@@ -207,8 +217,8 @@ export default function Terminal({
 
   // Focus the prompt once it is rendered.
   useEffect(() => {
-    if (booted) inputRef.current?.focus();
-  }, [booted]);
+    if (booted && !inline) inputRef.current?.focus();
+  }, [booted, inline]);
 
   // Notify (subtly) when the live project list changes while the shell is open.
   useEffect(() => {
@@ -223,7 +233,7 @@ export default function Terminal({
     const id = setTimeout(() => {
       pushLine(
         <span className="t-dim">
-          ✷ project list updated — type <span className="t-cmd">projects</span>{" "}
+          * project list updated, type <span className="t-cmd">projects</span>{" "}
           to view it.
         </span>,
       );
@@ -330,7 +340,12 @@ export default function Terminal({
         </button>
         {p.language ? <span className="t-meta"> · {p.language}</span> : null}
         {p.license ? <span className="t-meta"> · {p.license}</span> : null}
-        {p.stars > 0 ? <span className="t-meta"> · ★ {p.stars}</span> : null}
+        {p.stars > 0 ? (
+          <span className="t-meta">
+            {" "}
+            · {p.stars} {p.stars === 1 ? "star" : "stars"}
+          </span>
+        ) : null}
         {demo ? (
           <>
             <span className="t-meta"> · </span>
@@ -384,7 +399,8 @@ export default function Terminal({
         {p.language ?? "—"}
         <span className="t-dim"> license: </span>
         {p.license ?? "—"}
-        <span className="t-dim"> stars: </span>★ {p.stars}
+        <span className="t-dim"> stars: </span>
+        {p.stars}
       </span>,
       <span key="d4">
         <span className="t-dim">url: </span>
@@ -434,7 +450,7 @@ export default function Terminal({
   function donateFileLines(): ReactNode[] {
     return [
       <span key="do1" className="t-accent">
-        Support {site.org} ♥
+        Support {site.org}
       </span>,
       BLANK,
       <span key="do2">
@@ -765,7 +781,7 @@ export default function Terminal({
         pushLine(
           <span>
             opening GitHub Sponsors{" "}
-            <span className="t-dim">→ {site.donate}</span> — thank you ♥
+            <span className="t-dim">→ {site.donate}</span>, thank you
           </span>,
         );
         break;
@@ -873,11 +889,7 @@ export default function Terminal({
       case "exit":
       case "logout":
       case "quit":
-        pushLine(
-          <span className="t-dim">
-            leaving the shell → launching desktop view...
-          </span>,
-        );
+        pushLine(<span className="t-dim">opening the project list…</span>);
         window.setTimeout(() => onExit(), 320);
         break;
       case "sudo":
@@ -983,7 +995,10 @@ export default function Terminal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const raw = input;
+    runLine(input);
+  }
+
+  function runLine(raw: string) {
     const pathAtRun = cwd;
     pushLine(
       <span>
@@ -1145,46 +1160,63 @@ export default function Terminal({
       const selection = window.getSelection();
       if (selection && selection.toString().length > 0) return;
     }
-    inputRef.current?.focus();
+    inputRef.current?.focus({ preventScroll: true });
   }
 
   return (
-    <div className="t-body" ref={bodyRef} onClick={focusInput}>
-      <div className="t-output">
-        {lines.map((l) => (
-          <div key={l.id} className="t-line">
-            {l.node}
-          </div>
-        ))}
-      </div>
+    <>
+      <div className="t-body" ref={bodyRef} onClick={focusInput}>
+        <samp className="t-output">
+          {lines.map((l) => (
+            <div key={l.id} className="t-line">
+              {l.node}
+            </div>
+          ))}
+        </samp>
 
-      {booted ? (
-        <form className="t-inputrow" onSubmit={handleSubmit}>
-          <Prompt path={cwd} />
-          <span className="t-typed">{input}</span>
-          <span className="t-cursor" aria-hidden="true" />
-          {ghostFor(input) ? (
-            <span className="t-ghost" aria-hidden="true">
-              {ghostFor(input)}
-            </span>
-          ) : null}
-          <input
-            ref={inputRef}
-            className="t-hidden-input"
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              setHistPos(null);
-            }}
-            onKeyDown={handleKeyDown}
-            autoComplete="off"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            aria-label="Terminal command input"
-          />
-        </form>
+        {booted ? (
+          <form className="t-inputrow" onSubmit={handleSubmit}>
+            <Prompt path={cwd} />
+            <kbd className="t-typed">{input}</kbd>
+            <span className="t-cursor" aria-hidden="true" />
+            {ghostFor(input) ? (
+              <kbd className="t-ghost" aria-hidden="true">
+                {ghostFor(input)}
+              </kbd>
+            ) : null}
+            <input
+              ref={inputRef}
+              className="t-hidden-input"
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setHistPos(null);
+              }}
+              onKeyDown={handleKeyDown}
+              autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-label="Terminal command input"
+            />
+          </form>
+        ) : null}
+      </div>
+      {quickCommands.length ? (
+        <div className="t-quick" role="group" aria-label="Try a command">
+          {quickCommands.map((cmd) => (
+            <button
+              key={cmd}
+              type="button"
+              className="t-quick-btn"
+              disabled={!booted}
+              onClick={() => runLine(cmd)}
+            >
+              <kbd>{cmd}</kbd>
+            </button>
+          ))}
+        </div>
       ) : null}
-    </div>
+    </>
   );
 }

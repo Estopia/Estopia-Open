@@ -8,6 +8,8 @@ export type Project = {
   language: string | null;
   stars: number;
   license: string | null;
+  /** ISO time of the last push to the repo, or null when unknown. */
+  pushedAt: string | null;
 };
 
 type GitHubRepo = {
@@ -20,6 +22,7 @@ type GitHubRepo = {
   fork: boolean;
   archived: boolean;
   license: { spdx_id: string | null } | null;
+  pushed_at: string | null;
 };
 
 // Repos that should never be listed (org meta, forks handled separately).
@@ -73,15 +76,55 @@ export function demoLabel(url: string): string {
 // so the listing always reads well.
 const DESCRIPTION_OVERRIDES: Record<string, string> = {
   "Estopia-Open":
-    "The open-source home of Estopia Engineering — including the source for this very terminal.",
+    "The open-source home of Estopia Engineering, including the source for this site and its terminal.",
   "contact-page": "A reusable contact page built with Next.js and TypeScript.",
-  tools: "A collection of open-source developer tools and utilities.",
-  EstopiaWeb: "Estopia's original website — open-sourced and archived.",
+  tools: "A home for small developer tools and utilities. Empty so far.",
+  EstopiaWeb: "Estopia's original website, open-sourced and archived.",
+  "Apprentice-Atlas":
+    "A map-first iPhone app for finding apprenticeships in the UK and Germany.",
+};
+
+// Licences GitHub cannot classify (it reports NOASSERTION), named by hand.
+const LICENCE_OVERRIDES: Record<string, string> = {
+  "Apprentice-Atlas": "PolyForm Noncommercial",
+  "Apprentice-Atlas-Web": "PolyForm Noncommercial",
 };
 
 // Used when the GitHub API is unreachable (offline builds, rate limits) so the
 // page always renders a sensible list.
 const FALLBACK_PROJECTS: Project[] = [
+  {
+    name: "Tessellate",
+    description:
+      "Privacy-first, 100% client-side image-grid arranger: justified, fixed-scale & masonry layouts with zoom, drag-reorder and PNG/JPG export. React + Vite + TypeScript.",
+    url: "https://github.com/Estopia/Tessellate",
+    homepage: "https://tessellate.estopia.net",
+    language: "TypeScript",
+    stars: 0,
+    license: "MIT",
+    pushedAt: null,
+  },
+  {
+    name: "Apprentice-Atlas",
+    description: DESCRIPTION_OVERRIDES["Apprentice-Atlas"],
+    url: "https://github.com/Estopia/Apprentice-Atlas",
+    homepage: null,
+    language: "TypeScript",
+    stars: 0,
+    license: LICENCE_OVERRIDES["Apprentice-Atlas"],
+    pushedAt: null,
+  },
+  {
+    name: "Apprentice-Atlas-Web",
+    description:
+      "Bilingual marketing and editorial platform for Apprentice Atlas",
+    url: "https://github.com/Estopia/Apprentice-Atlas-Web",
+    homepage: null,
+    language: "TypeScript",
+    stars: 0,
+    license: LICENCE_OVERRIDES["Apprentice-Atlas-Web"],
+    pushedAt: null,
+  },
   {
     name: "Estopia-Open",
     description: DESCRIPTION_OVERRIDES["Estopia-Open"],
@@ -90,25 +133,18 @@ const FALLBACK_PROJECTS: Project[] = [
     language: "TypeScript",
     stars: 0,
     license: "MIT",
+    pushedAt: null,
   },
   {
     name: "curious.fun",
     description:
-      "A collection of tiny open-source web experiments built with Next.js and TailwindCSS — playful, minimal, and inspired by neal.fun.",
+      "A collection of tiny open-source web experiments built with Next.js and TailwindCSS. Playful, minimal, and inspired by neal.fun.",
     url: "https://github.com/Estopia/curious.fun",
     homepage: null,
     language: "TypeScript",
     stars: 0,
     license: "MIT",
-  },
-  {
-    name: "contact-page",
-    description: DESCRIPTION_OVERRIDES["contact-page"],
-    url: "https://github.com/Estopia/contact-page",
-    homepage: null,
-    language: "TypeScript",
-    stars: 0,
-    license: null,
+    pushedAt: null,
   },
   {
     name: "tools",
@@ -118,15 +154,7 @@ const FALLBACK_PROJECTS: Project[] = [
     language: null,
     stars: 0,
     license: "GPL-3.0",
-  },
-  {
-    name: "EstopiaWeb",
-    description: DESCRIPTION_OVERRIDES["EstopiaWeb"],
-    url: "https://github.com/Estopia/EstopiaWeb",
-    homepage: null,
-    language: "HTML",
-    stars: 0,
-    license: null,
+    pushedAt: null,
   },
 ];
 
@@ -143,7 +171,12 @@ function toProject(repo: GitHubRepo): Project {
     homepage: repo.homepage?.trim() ? repo.homepage.trim() : null,
     language: repo.language,
     stars: repo.stargazers_count,
-    license: repo.license?.spdx_id ?? null,
+    // GitHub reports a licence file it cannot classify as NOASSERTION.
+    license:
+      repo.license?.spdx_id === "NOASSERTION"
+        ? (LICENCE_OVERRIDES[repo.name] ?? "Other")
+        : (repo.license?.spdx_id ?? null),
+    pushedAt: repo.pushed_at ?? null,
   };
 }
 
@@ -191,7 +224,11 @@ export async function getProjectsResult(): Promise<ProjectsResult> {
         (repo) => !repo.fork && !repo.archived && !HIDDEN_REPOS.has(repo.name),
       )
       .map(toProject)
-      .sort((a, b) => b.stars - a.stars);
+      .sort(
+        (a, b) =>
+          b.stars - a.stars ||
+          (b.pushedAt ?? "").localeCompare(a.pushedAt ?? ""),
+      );
 
     if (projects.length === 0) {
       return {
